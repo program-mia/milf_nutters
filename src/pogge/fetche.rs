@@ -4,11 +4,13 @@ use std::io::Read;
 use regex::Regex;
 use reqwest::{blocking::Response, Error};
 
-pub fn url_array() -> [String; 1] {
+pub fn url_array() -> Vec<String> {
     // TODO probably could load it form a file and stuff
-    return [
-        "https://www.gutenberg.org/cache/epub/345/pg345-images.html".to_string(),
-    ];
+    let mut urls: Vec<String> = Vec::new();
+
+    urls.push("https://www.gutenberg.org/cache/epub/345/pg345-images.html".to_string());
+
+    return urls;
 }
 
 fn load_data_from_url(url: String) -> Result<Response, Error> {
@@ -44,14 +46,18 @@ pub fn loads_words_array_from_url(url: String) -> Vec<String> {
     let tags_regex = Regex::new(r"<[\s\S]*?>").unwrap();
     let single_word_or_entity_regex = Regex::new(r"[a-zA-Z'’]+|[^a-zA-Z'’\s]{1}").unwrap();
 
+    let mut vector_of_entities: Vec<String> = Vec::new();
+
     for captured in paragraph_regex.captures_iter(&string_data) {
         let paragraph = &captured[0];
         let clear_paragraph = tags_regex.replace_all(paragraph, "");
 
         for word_or_entity in single_word_or_entity_regex.captures_iter(&clear_paragraph) {
-            println!("word or entity: {}\n", &word_or_entity[0]);
+            vector_of_entities.push((&word_or_entity[0]).to_string());
         }
+
+        vector_of_entities.push("\n".to_string());
     }
 
-    return Vec::new();
+    return vector_of_entities;
 }
