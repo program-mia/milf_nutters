@@ -12,6 +12,29 @@ error_chain! {
     }
 }
 
+pub struct Nutter {
+    pub library: String,
+}
+// TODO create a struct here that will hold/run/do everything and it should all be run on that
+// structure
+
+impl Nutter {
+    pub fn init(library: String) -> Nutter {
+        return Nutter {
+            library: library,
+        };
+    }
+
+    // TODO create stuff here related to loading stuff, etc. etc.
+    pub fn load_library(&self) -> &Nutter {
+        // TODO all of it
+        let library_urls: Vec<String> = filere::load_library_urls(&self.library);
+
+        //TODO if library urls is an empty vector, print error and do some stuff
+        return self;
+    }
+}
+
 pub fn run() {
     // the whole URL load should probably happen in a separate method, etc. etc.
     // it probably should just load data from urls and save them if needed
