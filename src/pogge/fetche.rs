@@ -4,15 +4,6 @@ use std::io::Read;
 use regex::Regex;
 use reqwest::{blocking::Response, Error};
 
-pub fn url_array() -> Vec<String> {
-    // TODO probably could load it form a file and stuff
-    let mut urls: Vec<String> = Vec::new();
-
-    urls.push("https://www.gutenberg.org/cache/epub/345/pg345-images.html".to_string());
-
-    return urls;
-}
-
 fn load_data_from_url(url: String) -> Result<Response, Error> {
     let response = reqwest::blocking::get(url)?;
 

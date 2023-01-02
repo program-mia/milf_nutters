@@ -2,7 +2,7 @@ mod filere;
 mod fetche;
 
 use error_chain::error_chain;
-use self::fetche::{url_array, loads_words_array_from_url};
+use self::fetche::loads_words_array_from_url;
 
 // logic for the app itself, like generating things etc.
 error_chain! {
@@ -27,17 +27,17 @@ impl Nutter {
 
     // TODO create stuff here related to loading stuff, etc. etc.
     pub fn load_library(&self) -> &Nutter {
-        // TODO all of it
         let library_urls: Vec<String> = filere::load_library_urls(&self.library);
 
-        //TODO if library urls is an empty vector, print error and do some stuff
         if library_urls.len() == 0 {
             println!("No urls found in the specified library. You need to select a different library or add urls to the selected library.");
+
+            return self;
         }
 
         // the whole URL load should probably happen in a separate method, etc. etc.
         // it probably should just load data from urls and save them if needed
-        for url in url_array() {
+        for url in library_urls {
             let entities: Vec<String> = loads_words_array_from_url(url);
 
             for entity in entities {

@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
 use json::{JsonValue, array};
-// this fileres is for managing files - loading, storing, etc. 
 
 fn get_project_root_path() -> std::path::PathBuf {
     let mut path = std::env::current_exe().unwrap();
@@ -12,8 +11,6 @@ fn get_project_root_path() -> std::path::PathBuf {
 }
 
 fn get_file_contents_as_string(filename: String) -> std::io::Result<String> {
-    println!("{}-{}", get_project_root_path().display(), filename);
-
     let mut file = File::open(format!("{}/{}", get_project_root_path().display(), filename))?;
     let mut contents = String::new();
 
@@ -23,7 +20,6 @@ fn get_file_contents_as_string(filename: String) -> std::io::Result<String> {
 }
 
 pub fn load_library_urls(library: &String) -> Vec<String> {
-    // TODO open libraries file (json) and check if the given library exists. if it does, return
     let file_contents = match get_file_contents_as_string("libraries.json".to_string()) {
         Ok(contents) => contents,
         Err(error) => {
@@ -33,7 +29,7 @@ pub fn load_library_urls(library: &String) -> Vec<String> {
         }
     };
 
-   let parsed_content: JsonValue = match json::parse(&file_contents) {
+   let mut parsed_content: JsonValue = match json::parse(&file_contents) {
         Ok(result) => result,
         Err(error) => {
             println!("Failed to parse JSON data.\n{error}");
@@ -43,14 +39,23 @@ pub fn load_library_urls(library: &String) -> Vec<String> {
     };
 
     if parsed_content.is_empty() || ! parsed_content.has_key(&library)  {
+        println!("Libraries file is empty or the selected library was not found in the libraries file.");
+
         return vec!{};
     }
 
     let mut return_data = Vec::new();
 
-    for (key, url) in parsed_content.entries() {
-        println!("{key} => {url}");
-        return_data.push(url.to_string());
+    for (key,urls_array) in parsed_content.entries_mut() {
+        if key != library {
+            continue;
+        }
+
+        while urls_array.len() > 0 {
+            let url = urls_array.pop();
+
+            return_data.push(url.to_string());
+        }
     }
 
     return return_data;
