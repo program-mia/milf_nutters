@@ -1,5 +1,3 @@
-//this one will be responsible for loading words from external sources if needed, saving it to
-//files and stuff
 use std::io::Read;
 use regex::Regex;
 use reqwest::{blocking::Response, Error};

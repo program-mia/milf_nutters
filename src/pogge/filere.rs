@@ -19,6 +19,33 @@ pub fn create_new_resource_file_with_data(filename: String, entities: &mut Vec<S
     return Ok(());
 }
 
+pub fn load_resource_file_words_into_vector(filename: String) -> Vec<String> {
+    let path = get_full_path_for_resource_file(filename);
+    let mut entities: Vec<String> = Vec::new();
+
+    if let Ok(lines) = read_lines(String::from(path.to_str().unwrap())) {
+        for line in lines {
+            if let Ok(entity) = line {
+                let corrected_entity_value: String = if entity == "\\n" {
+                    "\n".to_string()
+                } else {
+                    entity
+                };
+
+                entities.push(corrected_entity_value);
+            }
+        }
+    }
+
+    return entities;
+}
+
+fn read_lines(filename: String) -> std::io::Result<std::io::Lines<std::io::BufReader<File>>> {
+    let file = File::open(filename)?;
+
+    Ok(std::io::BufReader::new(file).lines())
+}
+
 pub fn is_resource_file_available(filename: String) -> bool {
     let path = get_full_path_for_resource_file(filename);
 
