@@ -2,7 +2,6 @@ mod filere;
 mod fetche;
 
 use error_chain::error_chain;
-use self::fetche::loads_words_array_from_url;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -17,8 +16,6 @@ error_chain! {
 pub struct Nutter {
     pub library: String,
 }
-// TODO create a struct here that will hold/run/do everything and it should all be run on that
-// structure
 
 impl Nutter {
     pub fn init(library: String) -> Nutter {
@@ -27,8 +24,7 @@ impl Nutter {
         };
     }
 
-    // TODO create stuff here related to loading stuff, etc. etc.
-    pub fn load_library(&self) -> &Nutter {
+    pub fn load_library_resources(&self) -> &Nutter {
         let library_urls: Vec<String> = filere::load_library_urls(&self.library);
 
         if library_urls.len() == 0 {
@@ -37,32 +33,25 @@ impl Nutter {
             return self;
         }
 
-        // the whole URL load should probably happen in a separate method, etc. etc.
-        // it probably should just load data from urls and save them if needed
         for url in library_urls {
-            // TODO some thing here that first checks the url file, if it doesnt exists, crete it
-            // and fetch words, put them in, etc.
-            let hashed_url = Nutter::hash_string(url.clone());
-            let filename = format!("{}.txt", hashed_url);
+            let filename = Nutter::hash_string(url.clone());
 
-            // TODO pass the filename to filere.rs to check if file exists. if it does, go over, if
-            // doesn't, load words and store them in the file, one per line
-
-            println!("Hashed string: {}", hashed_url);
-            let entities: Vec<String> = loads_words_array_from_url(url);
-
-            for entity in entities {
-                println!("{} ", entity);
+            if filere::is_resource_file_available(filename.to_string()) {
+                continue; 
             }
 
-            //if there is no file with a given name, idk how im naming them yet but we'll see, maybe
-            //csv or something, then save it all in the file, etc. 
-        }
+            let entities: Vec<String> = fetche::loads_words_array_from_url(url.clone());
 
-        // after the above, scan all files and load stuff and start building the whole graph
+            match filere::create_new_resource_file_with_data(filename.to_string(), &entities) {
+                Err(error) => println!("Failed to save data for {} into a file: {}", url.clone(), error),
+                _ => {},
+            };
+        }
 
         return self;
     }
+
+    // TODO create a method to build a connection graph for the selected library 
 
     fn hash_string(string: String) -> u64 {
         let mut hasher = DefaultHasher::new();

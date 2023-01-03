@@ -1,22 +1,21 @@
+use std::path::PathBuf;
 use std::fs::File;
 use std::io::prelude::*;
 use json::{JsonValue, array};
 
-fn get_project_root_path() -> std::path::PathBuf {
-    let mut path = std::env::current_exe().unwrap();
+pub fn create_new_resource_file_with_data(filename: String, entities: &Vec<String>) -> std::io::Result<()> {
+    let mut file = File::create(get_full_path_for_resource_file(filename).as_path())?;
 
-    path.pop();
+    file.write_all(entities.join("\n").as_bytes())?;
 
-    return path;
+    return Ok(());
 }
 
-fn get_file_contents_as_string(filename: String) -> std::io::Result<String> {
-    let mut file = File::open(format!("{}/{}", get_project_root_path().display(), filename))?;
-    let mut contents = String::new();
+pub fn is_resource_file_available(filename: String) -> bool {
+    let path = get_full_path_for_resource_file(filename);
 
-    file.read_to_string(&mut contents)?;
-
-    return Ok(contents);
+    return path.as_path()
+        .exists();
 }
 
 pub fn load_library_urls(library: &String) -> Vec<String> {
@@ -59,4 +58,31 @@ pub fn load_library_urls(library: &String) -> Vec<String> {
     }
 
     return return_data;
+}
+
+fn get_project_root_path() -> std::path::PathBuf {
+    let mut path = std::env::current_exe().unwrap();
+
+    path.pop();
+
+    return path;
+}
+
+fn get_file_contents_as_string(filename: String) -> std::io::Result<String> {
+    let mut file = File::open(format!("{}/{}", get_project_root_path().display(), filename))?;
+    let mut contents = String::new();
+
+    file.read_to_string(&mut contents)?;
+
+    return Ok(contents);
+}
+
+fn get_full_path_for_resource_file(filename: String) -> PathBuf{
+    let mut path = get_project_root_path();
+
+    path.push("resources");
+    path.push(filename);
+    path.set_extension("txt");
+
+    return path;
 }
