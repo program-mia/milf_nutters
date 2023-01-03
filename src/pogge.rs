@@ -40,9 +40,9 @@ impl Nutter {
                 continue; 
             }
 
-            let entities: Vec<String> = fetche::loads_words_array_from_url(url.clone());
+            let mut entities: Vec<String> = fetche::loads_words_array_from_url(url.clone());
 
-            match filere::create_new_resource_file_with_data(filename.to_string(), &entities) {
+            match filere::create_new_resource_file_with_data(filename.to_string(), &mut entities) {
                 Err(error) => println!("Failed to save data for {} into a file: {}", url.clone(), error),
                 _ => {},
             };

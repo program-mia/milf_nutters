@@ -1,10 +1,18 @@
 use std::path::PathBuf;
-use std::fs::File;
+use std::fs::{File, create_dir};
 use std::io::prelude::*;
 use json::{JsonValue, array};
 
-pub fn create_new_resource_file_with_data(filename: String, entities: &Vec<String>) -> std::io::Result<()> {
+pub fn create_new_resource_file_with_data(filename: String, entities: &mut Vec<String>) -> std::io::Result<()> {
+    create_resources_directory_if_needed();
+
     let mut file = File::create(get_full_path_for_resource_file(filename).as_path())?;
+
+    for entity in entities.iter_mut() {
+        if *entity == "\n" {
+            *entity = "\\n".to_string();
+        }
+    }
 
     file.write_all(entities.join("\n").as_bytes())?;
 
@@ -85,4 +93,19 @@ fn get_full_path_for_resource_file(filename: String) -> PathBuf{
     path.set_extension("txt");
 
     return path;
+}
+
+fn create_resources_directory_if_needed() {
+    let mut path = get_project_root_path();
+
+    path.push("resources");
+
+    if path.exists() {
+        return;
+    }
+
+    match create_dir(path) {
+        Err(error) => println!("Failed to create resources directory: {}", error),
+        Ok(_) => {},
+    };
 }
