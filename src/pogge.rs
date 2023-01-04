@@ -2,6 +2,7 @@ mod filere;
 mod fetche;
 
 use error_chain::error_chain;
+use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -13,20 +14,32 @@ error_chain! {
     }
 }
 
-pub struct Nutter {
+pub struct Nutter<'nutter> {
     pub library: String,
     pub library_urls: Vec<String>,
+    pub graph: HashMap<String, &'nutter mut Node<'nutter>>,
 }
 
-impl Nutter {
-    pub fn init(library: String) -> Nutter {
+pub struct Node<'node> {
+    pub entity: String,
+    pub connecitons: Vec<&'node mut NodeConnection<'node>>,
+}
+
+pub struct NodeConnection<'connection> {
+    pub occurences: u32, 
+    pub node: &'connection mut Node<'connection>,
+}
+
+impl<'nutter> Nutter<'nutter> {
+    pub fn init(library: String) -> Nutter<'nutter> {
         return Nutter {
             library: library,
             library_urls: vec!{},
+            graph: HashMap::new(),
         };
     }
 
-    pub fn load_library_resources(&mut self) -> &Nutter {
+    pub fn load_library_resources(&mut self) -> &'nutter Nutter {
         self.library_urls = filere::load_library_urls(&self.library);
 
         if self.library_urls.len() == 0 {
@@ -53,8 +66,7 @@ impl Nutter {
         return self;
     }
 
-    pub fn build_entities_graph(&self) -> &Nutter {
-       // TODO
+    pub fn build_entities_graph(&self) -> &'nutter Nutter {
         for url in &self.library_urls {
             let filename = Nutter::hash_string(url.clone());
 
