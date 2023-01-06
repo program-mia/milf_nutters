@@ -14,24 +14,24 @@ error_chain! {
     }
 }
 
-pub struct Nutter<'nutter> {
+pub struct Nutter {
     pub library: String,
     pub library_urls: Vec<String>,
-    pub graph: HashMap<String, Node<'nutter>>,
+    pub graph: HashMap<String, Node>,
 }
 
-pub struct Node<'node> {
+pub struct Node {
     pub entity: String,
-    pub connections: Vec<&'node NodeConnection<'node>>,
+    pub connections: Vec<NodeConnection>,
 }
 
-pub struct NodeConnection<'connection> {
+pub struct NodeConnection {
     pub occurences: u32, 
-    pub node: &'connection Node<'connection>,
+    pub entity: String,
 }
 
-impl<'nutter> Nutter<'nutter> {
-    pub fn init(library: String) -> Nutter<'nutter> {
+impl Nutter {
+    pub fn init(library: String) -> Nutter {
         return Nutter {
             library: library,
             library_urls: vec!{},
@@ -39,7 +39,7 @@ impl<'nutter> Nutter<'nutter> {
         };
     }
 
-    pub fn load_library_resources(&mut self) -> &'nutter mut Nutter {
+    pub fn load_library_resources(&mut self) -> &mut Nutter {
         self.library_urls = filere::load_library_urls(&self.library);
 
         if self.library_urls.len() == 0 {
@@ -66,7 +66,7 @@ impl<'nutter> Nutter<'nutter> {
         return self;
     }
 
-    pub fn build_entities_graph(&mut self) -> &'nutter mut Nutter {
+    pub fn build_entities_graph(&mut self) -> &mut Nutter {
         let mut urls: Vec<String> = vec!{};
 
         // Construct a local vector of URLs to not have a reference mismatch later
@@ -92,31 +92,57 @@ impl<'nutter> Nutter<'nutter> {
                 prev_entity = entity;
             }
 
-            // TODO need to do the last insert here in the end, to match EOF with the last entity
+            self.graph.get_mut(&prev_entity).unwrap().connections.push(NodeConnection {
+                occurences: 1,
+                entity: "".to_string(),
+            });
         }
 
         return self;
     }
 
     fn add_entity_to_graph_with_previous_connection(&mut self, entity: String, prev_entity: String) {
-        // TODO add entity to a graph if it doesn't exist yet (omit if empty string)
-        // when adding to a graph, remember to also add entry in the hash map so that it's easeir
-        // to find
-        // when prev_entity is not empty string, update the link from prev to new entity with count 
+        if entity.is_empty() {
+            return;
+        }
+
         self.graph.entry(entity.clone()).or_insert(Node {
             entity: entity.clone(),
             connections: vec!{},
         });
 
-        self.graph.entry(prev_entity.clone()).or_insert(Node {
+        if prev_entity.is_empty() {
+            return;
+        }
+
+        let mut found_connection_index = 0;
+        
+        for index in 0..self.graph.get(&entity).unwrap().connections.len() {
+            if self.graph.get(&entity).unwrap().connections[index].entity != prev_entity {
+                continue;
+            }
+            
+            self.graph.get_mut(&entity)
+                .unwrap()
+                .connections[index]
+                .occurences = self.graph.get(&entity).unwrap().connections[index].occurences + 1;        
+
+            found_connection_index = index;
+        }
+
+        if found_connection_index != 0 {
+            return;
+        }
+
+        self.graph.get_mut(&entity).unwrap().connections.push(NodeConnection {
+            occurences: 1,
             entity: prev_entity.clone(),
-            connections: vec!{},
         });
     }
 
-    pub fn print_graph(&mut self) -> &'nutter mut Nutter {
+    pub fn print_graph(&mut self) -> &mut Nutter {
         for (_, node) in self.graph.iter() {
-            println!("Node: {}", node.entity);
+            println!("Node: {} - # of connections - {}", node.entity, node.connections.len());
         }
 
         return self;
