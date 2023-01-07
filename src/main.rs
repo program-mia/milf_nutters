@@ -4,8 +4,8 @@ fn main() -> Result<(), ()> {
     let mut nutter = pogge::Nutter::init("default".to_string());
 
     nutter.load_library_resources()
-        .build_entities_graph()
-        .print_graph();
+        .build_entities_graph();
+//        .print_graph();
 
     let mut input = String::new();
     let stdin = std::io::stdin();
@@ -22,9 +22,5 @@ fn main() -> Result<(), ()> {
     }
     // TODO accept some initial parameters and pass them to the pogge init method to start
     // everything, etc? or at least initial data
-    //println!("Status {}", res.status());
-    //println!("Headers:\n{:#?}", res.headers());
-    //println!("Body:\n{}", body);
-
     return Ok(());
 }

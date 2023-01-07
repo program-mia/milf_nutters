@@ -6,6 +6,7 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::time::Instant;
 use rand::{thread_rng, Rng};
 
 // logic for the app itself, like generating things etc.
@@ -43,6 +44,8 @@ impl Nutter {
     }
 
     pub fn load_library_resources(&mut self) -> &mut Nutter {
+        let timer = Instant::now();
+
         self.library_urls = filere::load_library_urls(&self.library);
 
         if self.library_urls.len() == 0 {
@@ -66,10 +69,13 @@ impl Nutter {
             };
         }
 
+        println!("Library resources loaded in {:?}", timer.elapsed());
+
         return self;
     }
 
     pub fn build_entities_graph(&mut self) -> &mut Nutter {
+        let full_function_timer = Instant::now();
         // TODO this is overall slow, need to speed this up
         let mut urls: Vec<String> = vec!{};
 
@@ -79,6 +85,7 @@ impl Nutter {
         }
 
         for url in urls.iter() {
+            let single_url_timer = Instant::now();
             let filename = Nutter::hash_string(url.clone());
 
             if ! filere::is_resource_file_available(filename.to_string()) {
@@ -102,7 +109,11 @@ impl Nutter {
                 occurences: 1,
                 entity: "".to_string(),
             });
+
+            println!("Graph built for url \"{}\" in {:?}", url, single_url_timer.elapsed());
         }
+
+        println!("Words graph built in {:?}", full_function_timer.elapsed());
 
         return self;
     }
@@ -162,6 +173,13 @@ impl Nutter {
 
         return self;
     }
+
+    //TODO add method to clear resources file, so that you can re-fetch it
+    //TODO add method to add something to a given library array in JSON
+    //TODO add method to return all urls in resource 
+    //TODO add method to return all available resource groups
+    //TODO add method to return array/vector of the graph (similar to the print method)
+    //TODO add method to print X sentences
 
     // TODO maybe return last entity so that I can see if maybe the end was met or something.
     pub fn print_sentence_starting_from(&self, mut entity: String) -> &Nutter {
