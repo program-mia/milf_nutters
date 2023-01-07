@@ -86,12 +86,14 @@ impl Nutter {
             }
 
             let entities: Vec<String> = filere::load_resource_file_words_into_vector(filename.to_string()); 
-            let mut prev_entity: String = String::new();
+
+            let mut prev_entity: String = "".to_string();
 
             for mut entity in entities {
                 entity.make_ascii_lowercase();
 
-                self.add_entity_to_graph_with_previous_connection(entity.clone(), prev_entity.clone());
+                // feed it in reverse entity order to make graph actually work
+                self.add_entity_to_graph_with_previous_connection(prev_entity.clone(), entity.clone());
 
                 prev_entity = entity;
             }
@@ -132,7 +134,7 @@ impl Nutter {
             self.graph.get_mut(&entity)
                 .unwrap()
                 .connections[index]
-                .occurences = self.graph.get(&entity).unwrap().connections[index].occurences + 1;        
+                .occurences += 1;        
 
             found_connection_index = index;
 
@@ -164,8 +166,9 @@ impl Nutter {
     // TODO maybe return last entity so that I can see if maybe the end was met or something.
     pub fn print_sentence_starting_from(&self, mut entity: String) -> &Nutter {
         // If entity is empty, find a starting point
+        let word_regex = Regex::new("[a-zA-Z]+").unwrap(); 
+
         if entity.is_empty() {
-            let word_regex = Regex::new("[a-zA-Z]+").unwrap(); 
             let mut rng = thread_rng();
 
             while ! word_regex.is_match(&entity) {
@@ -186,16 +189,22 @@ impl Nutter {
 
         let mut is_new_sentence = true;
 
-        while ! entity.is_empty() && entity != "" && entity != "\n" && entity != "." {
+        while ! entity.is_empty() && entity != "" && entity != "." {
             if is_new_sentence {
                 entity = Nutter::uppercase_first_string_letter(entity);
             }
 
-            print!("{} ", entity);
+            if word_regex.is_match(&entity) && ! is_new_sentence {
+                print!(" ");
+            }
+
+            print!("{}", entity);
 
             entity = self.get_next_entity_after(entity);
             is_new_sentence = false;
         }
+        
+        print!("{}", entity);
         
         return self;
     }
@@ -204,6 +213,8 @@ impl Nutter {
         entity = entity.to_lowercase();
 
         if ! self.graph.contains_key(&entity) {
+            println!("did not find {} in graph", entity);
+
             return String::new();
         }
 
