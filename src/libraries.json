@@ -1,5 +1,7 @@
 {
   "default": [
-    "https://www.gutenberg.org/cache/epub/345/pg345-images.html"
+    "https://www.gutenberg.org/cache/epub/345/pg345-images.html",
+    "https://www.gutenberg.org/cache/epub/61/pg61-images.html",
+    "https://www.gutenberg.org/cache/epub/3160/pg3160-images.html"
   ]
 }

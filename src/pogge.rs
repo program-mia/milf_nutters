@@ -2,9 +2,11 @@ mod filere;
 mod fetche;
 
 use error_chain::error_chain;
+use regex::Regex;
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use rand::{thread_rng, Rng};
 
 // logic for the app itself, like generating things etc.
 error_chain! {
@@ -23,6 +25,7 @@ pub struct Nutter {
 pub struct Node {
     pub entity: String,
     pub connections: Vec<NodeConnection>,
+    pub total_connections_amount: u32,
 }
 
 pub struct NodeConnection {
@@ -67,6 +70,7 @@ impl Nutter {
     }
 
     pub fn build_entities_graph(&mut self) -> &mut Nutter {
+        // TODO this is overall slow, need to speed this up
         let mut urls: Vec<String> = vec!{};
 
         // Construct a local vector of URLs to not have a reference mismatch later
@@ -106,9 +110,10 @@ impl Nutter {
             return;
         }
 
-        self.graph.entry(entity.clone()).or_insert(Node {
+        self.graph.entry(entity.to_string()).or_insert(Node {
             entity: entity.clone(),
             connections: vec!{},
+            total_connections_amount: 0,
         });
 
         if prev_entity.is_empty() {
@@ -117,6 +122,8 @@ impl Nutter {
 
         let mut found_connection_index = 0;
         
+        // overall this loop is going to perform really bad when building stuff, need to somehow
+        // fix it
         for index in 0..self.graph.get(&entity).unwrap().connections.len() {
             if self.graph.get(&entity).unwrap().connections[index].entity != prev_entity {
                 continue;
@@ -128,6 +135,10 @@ impl Nutter {
                 .occurences = self.graph.get(&entity).unwrap().connections[index].occurences + 1;        
 
             found_connection_index = index;
+
+            self.graph.get_mut(&entity).unwrap().total_connections_amount += 1;
+            
+            break;
         }
 
         if found_connection_index != 0 {
@@ -138,14 +149,94 @@ impl Nutter {
             occurences: 1,
             entity: prev_entity.clone(),
         });
+
+        self.graph.get_mut(&entity).unwrap().total_connections_amount += 1;
     }
 
     pub fn print_graph(&mut self) -> &mut Nutter {
         for (_, node) in self.graph.iter() {
-            println!("Node: {} - # of connections - {}", node.entity, node.connections.len());
+            println!("Node: {} - # of connections - {} with {} in total", node.entity, node.connections.len(), node.total_connections_amount);
         }
 
         return self;
+    }
+
+    // TODO maybe return last entity so that I can see if maybe the end was met or something.
+    pub fn print_sentence_starting_from(&self, mut entity: String) -> &Nutter {
+        // If entity is empty, find a starting point
+        if entity.is_empty() {
+            let word_regex = Regex::new("[a-zA-Z]+").unwrap(); 
+            let mut rng = thread_rng();
+
+            while ! word_regex.is_match(&entity) {
+                let key_index = rng.gen_range(0..self.graph.len()); 
+                let mut index = 0;
+                    
+                for (_, node) in self.graph.iter() {
+                    if index == key_index {
+                       entity = node.entity.clone(); 
+
+                        break;
+                    }
+
+                    index += 1;
+                }
+            }
+        }
+
+        let mut is_new_sentence = true;
+
+        while ! entity.is_empty() && entity != "" && entity != "\n" && entity != "." {
+            if is_new_sentence {
+                entity = Nutter::uppercase_first_string_letter(entity);
+            }
+
+            print!("{} ", entity);
+
+            entity = self.get_next_entity_after(entity);
+            is_new_sentence = false;
+        }
+        
+        return self;
+    }
+
+    fn get_next_entity_after(&self, mut entity: String) -> String {
+        entity = entity.to_lowercase();
+
+        if ! self.graph.contains_key(&entity) {
+            return String::new();
+        }
+
+        // TODO it would be nice to maybe increase the probability of hitting a sentence ending
+        // character with the length increasing
+        
+        let mut rng = thread_rng();
+        let selected_index = rng.gen_range(0..self.graph.get(&entity).unwrap().total_connections_amount);
+        let mut current_index = 0;
+
+        for connection in self.graph.get(&entity).unwrap().connections.iter() {
+            if current_index <= selected_index && selected_index <= current_index + connection.occurences {
+                entity = connection.entity.clone();
+
+                break;
+            }
+
+            current_index += connection.occurences;
+        }
+
+        return match self.graph.get(&entity).unwrap().total_connections_amount {
+            0 => String::new(),
+            _ => self.graph.get(&entity).unwrap().entity.clone(),
+        };
+    }
+
+    fn uppercase_first_string_letter(string: String) -> String {
+        let mut character = string.chars();
+
+        return match character.next() {
+            None => String::new(),
+            Some(letter) => letter.to_uppercase().collect::<String>() + character.as_str(),
+        };
     }
 
     fn hash_string(string: String) -> u64 {
