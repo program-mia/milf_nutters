@@ -80,7 +80,7 @@ pub fn load_library_urls(library: &String) -> Vec<String> {
 
     let mut return_data = Vec::new();
 
-    for (key,urls_array) in parsed_content.entries_mut() {
+    for (key, urls_array) in parsed_content.entries_mut() {
         if key != library {
             continue;
         }
@@ -135,4 +135,30 @@ fn create_resources_directory_if_needed() {
         Err(error) => println!("Failed to create resources directory: {}", error),
         Ok(_) => {},
     };
+}
+
+pub fn get_libraries_file_as_json() -> JsonValue {
+    let file_contents = match get_file_contents_as_string("libraries.json".to_string()) {
+        Ok(contents) => contents,
+        Err(error) => {
+            println!("There was an error while loading the libraries file.\n{error}");
+
+            "{}".to_string()
+        }
+    };
+
+   let parsed_content: JsonValue = match json::parse(&file_contents) {
+        Ok(result) => result,
+        Err(error) => {
+            println!("Failed to parse JSON data.\n{error}");
+
+            array![]
+        }
+    };
+
+    if parsed_content.is_empty() {
+        println!("Libraries file is empty or the selected library was not found in the libraries file.");
+    }
+
+    return parsed_content;
 }

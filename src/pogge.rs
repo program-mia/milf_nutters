@@ -34,6 +34,11 @@ pub struct NodeConnection {
     pub entity: String,
 }
 
+pub struct Library {
+    pub name: String,
+    pub urls: Vec<String>,
+}
+
 impl Nutter {
     pub fn init(library: String) -> Nutter {
         return Nutter {
@@ -257,6 +262,26 @@ impl Nutter {
             0 => String::new(),
             _ => self.graph.get(&entity).unwrap().entity.clone(),
         };
+    }
+
+    pub fn get_libraries_list(&self) -> Vec<Library> {
+        let mut library_data = filere::get_libraries_file_as_json();
+        let mut parsed_data: Vec<Library> = vec!{};
+
+        for (key, urls) in library_data.entries_mut() {
+            let mut urls_vec: Vec<String> = vec!{}; 
+
+            for url in urls.members() {
+                urls_vec.push(url.clone().to_string());
+            }
+
+            parsed_data.push(Library {
+                name: key.to_string(),
+                urls: urls_vec,
+            });
+        }
+        
+        return parsed_data;
     }
 
     fn uppercase_first_string_letter(string: String) -> String {

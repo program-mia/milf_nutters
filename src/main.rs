@@ -44,7 +44,7 @@ fn run_in_console() -> Result<(), ()> {
     while option != ":exit" {
         option = String::new();
 
-        print_console_options();
+        print_console_options(nutter.library.clone());
 
         console_input.read_line(&mut option).unwrap();
         option.pop();
@@ -56,6 +56,8 @@ fn run_in_console() -> Result<(), ()> {
 
         match action.as_str() {
             ":interactive" => use_generator_in_console(&mut nutter),
+            ":set_library" => set_library_from_console(&mut nutter, option.clone()),
+            ":print_libraries" => print_libraries(&nutter),
             ":exit" => option = action.to_string().clone(),
             _ => println!("This option does not exists, please try again."),
         };
@@ -63,6 +65,20 @@ fn run_in_console() -> Result<(), ()> {
 
 
     return Ok(());
+}
+
+fn print_libraries(nutter: &pogge::Nutter) {
+    for library in nutter.get_libraries_list() {
+        println!("Library - {}", library.name);
+
+        for url in library.urls {
+            println!("\t- {}", url);
+        }
+    }
+}
+
+fn set_library_from_console(nutter: &mut pogge::Nutter, input: String) {
+    // TODO
 }
 
 fn use_generator_in_console(nutter: &mut pogge::Nutter) {
@@ -86,9 +102,20 @@ fn use_generator_in_console(nutter: &mut pogge::Nutter) {
     };
 }
 
-fn print_console_options() {
-    println!("---CONSOLE OPTIONS---");
+fn print_console_options(library: String) {
+    // TODO add some flag to Nutter indicating if the graph for the selected library is built and
+    // up to date
+    println!("---CONSOLE OPTIONS (current/working library - {})---", library);
     println!(":interactive - use interactive nutter console to generate sentences.");
+    println!(":set_library {} - set given library name as the current/working library", "{library name}");
+    println!(":add_library {} - add new library of URLs to program data.", "{library name}");
+    println!(":remove_library {} - remove whole library from program data.", "{library name}");
+    println!(":print_libraries - shows a list of all available libraries and URLs they contain.");
+    println!(":add_url {} {} - adds new URL to given library. If library is not provided, the current one will be used.", "{url}", "{library?}");
+    println!(":remove_url {} {} - removes given URL from library. If library is not provided, the current one will be used.", "{url}", "{library?}");
+    println!(":fetch_data - fetches and loads URLs data for currently selected library. Use add -c to clear cached files and re-download everything.");
+    println!(":build_graph - builds graph of currently selected library.");
+    println!(":print_sentences {} - prints the given number of sentences on the screen without entering interactive mode.", "{number}");
     println!(":exit - exit program.");
 }
 
