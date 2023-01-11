@@ -37,16 +37,24 @@ fn get_running_mode_from_args(arguments: Vec<String>) -> RunningMode {
 fn run_in_console() -> Result<(), ()> {
     let console_input = std::io::stdin();
     let mut option: String = String::new();
-    let mut library: String = "default".to_string();
+    let library: String = "default".to_string();
+    let mut loaded_status: String;
 
     let mut nutter = pogge::Nutter::init(library);
 
     while option != ":exit" {
         option = String::new();
 
-        print_console_options(nutter.library.clone());
+        if nutter.is_library_loaded {
+            loaded_status = "Loaded".to_string();
+        } else {
+            loaded_status = "Not loaded".to_string();
+        }
+
+        print_console_options(nutter.library.clone(), loaded_status.clone());
 
         console_input.read_line(&mut option).unwrap();
+        println!();
         option.pop();
 
         let action = match option.clone().split_whitespace().nth(0) {
@@ -57,7 +65,9 @@ fn run_in_console() -> Result<(), ()> {
         match action.as_str() {
             ":interactive" => use_generator_in_console(&mut nutter),
             ":set_library" => set_library_from_console(&mut nutter, option.clone()),
+            ":add_library" => add_library_form_console(&mut nutter, option.clone()),
             ":print_libraries" => print_libraries(&nutter),
+            ":print_graph" => print_graph(&mut nutter),
             ":exit" => option = action.to_string().clone(),
             _ => println!("This option does not exists, please try again."),
         };
@@ -65,6 +75,10 @@ fn run_in_console() -> Result<(), ()> {
 
 
     return Ok(());
+}
+
+fn print_graph(nutter: &mut pogge::Nutter) {
+    nutter.print_graph();
 }
 
 fn print_libraries(nutter: &pogge::Nutter) {
@@ -77,8 +91,28 @@ fn print_libraries(nutter: &pogge::Nutter) {
     }
 }
 
+fn add_library_form_console(nutter: &mut pogge::Nutter, input: String) {
+    let library = match input.split_whitespace().nth(1) {
+        Some(data) => data.to_string(),
+        None => "".to_string(),
+    };
+
+    match nutter.add_library(library) {
+        Ok(_) => {},
+        Err(error) => println!("Error occured: {}", error),
+    };
+}
+
 fn set_library_from_console(nutter: &mut pogge::Nutter, input: String) {
-    // TODO
+    let library = match input.split_whitespace().nth(1) {
+        Some(data) => data.to_string(),
+        None => "".to_string(),
+    };
+
+    match nutter.set_library(library) {
+        Ok(_) => {},
+        Err(error) => println!("Error occured: {}", error),
+    };
 }
 
 fn use_generator_in_console(nutter: &mut pogge::Nutter) {
@@ -102,21 +136,24 @@ fn use_generator_in_console(nutter: &mut pogge::Nutter) {
     };
 }
 
-fn print_console_options(library: String) {
+fn print_console_options(library: String, loaded_status: String) {
     // TODO add some flag to Nutter indicating if the graph for the selected library is built and
     // up to date
-    println!("---CONSOLE OPTIONS (current/working library - {})---", library);
+    println!();
+    println!("---CONSOLE OPTIONS \"{}\"/{})---", library, loaded_status);
     println!(":interactive - use interactive nutter console to generate sentences.");
     println!(":set_library {} - set given library name as the current/working library", "{library name}");
     println!(":add_library {} - add new library of URLs to program data.", "{library name}");
     println!(":remove_library {} - remove whole library from program data.", "{library name}");
     println!(":print_libraries - shows a list of all available libraries and URLs they contain.");
+    println!(":print_graph - attempts to print all words with connections count on your screen. It will probably overflood it.");
     println!(":add_url {} {} - adds new URL to given library. If library is not provided, the current one will be used.", "{url}", "{library?}");
     println!(":remove_url {} {} - removes given URL from library. If library is not provided, the current one will be used.", "{url}", "{library?}");
     println!(":fetch_data - fetches and loads URLs data for currently selected library. Use add -c to clear cached files and re-download everything.");
     println!(":build_graph - builds graph of currently selected library.");
     println!(":print_sentences {} - prints the given number of sentences on the screen without entering interactive mode.", "{number}");
     println!(":exit - exit program.");
+    println!();
 }
 
 fn run_as_web_server() -> Result<(), ()> {

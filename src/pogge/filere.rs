@@ -53,6 +53,44 @@ pub fn is_resource_file_available(filename: String) -> bool {
         .exists();
 }
 
+pub fn add_library(library: String) -> std::result::Result<(), String> {
+    let file_contents = match get_file_contents_as_string("libraries.json".to_string()) {
+        Ok(contents) => contents,
+        Err(error) => {
+            println!("There was an error while loading the libraries file.\n{error}");
+
+            "{}".to_string()
+        }
+    };
+
+   let mut parsed_content: JsonValue = match json::parse(&file_contents) {
+        Ok(result) => result,
+        Err(error) => {
+            println!("Failed to parse JSON data.\n{error}");
+
+            array![]
+        }
+    };
+
+    match parsed_content.insert(library.as_str(), array![]) {
+        Ok(_) => {},
+        Err(error) => return Err(error.to_string()),
+    };
+
+
+    return save_content_to_libraries_file(json::stringify_pretty(parsed_content, 4));
+} 
+
+pub fn save_content_to_libraries_file(content: String) -> std::result::Result<(), String>
+{
+    let libraries_path = format!("{}/libraries.json", get_project_root_path().display());
+
+    return match std::fs::write(libraries_path, content) {
+        Ok(()) => Ok(()),
+        Err(error) => Err(error.to_string()),
+    };
+}
+
 pub fn load_library_urls(library: &String) -> Vec<String> {
     let file_contents = match get_file_contents_as_string("libraries.json".to_string()) {
         Ok(contents) => contents,

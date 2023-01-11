@@ -21,6 +21,7 @@ pub struct Nutter {
     pub library: String,
     pub library_urls: Vec<String>,
     pub graph: HashMap<String, Node>,
+    pub is_library_loaded: bool,
 }
 
 pub struct Node {
@@ -45,6 +46,7 @@ impl Nutter {
             library: library,
             library_urls: vec!{},
             graph: HashMap::new(),
+            is_library_loaded: false,
         };
     }
 
@@ -171,6 +173,7 @@ impl Nutter {
         self.graph.get_mut(&entity).unwrap().total_connections_amount += 1;
     }
 
+    // Note that this only works for console
     pub fn print_graph(&mut self) -> &mut Nutter {
         for (_, node) in self.graph.iter() {
             println!("Node: {} - # of connections - {} with {} in total", node.entity, node.connections.len(), node.total_connections_amount);
@@ -282,6 +285,44 @@ impl Nutter {
         }
         
         return parsed_data;
+    }
+
+    pub fn add_library(&mut self, library_name: String) -> std::result::Result<(), String> {
+        if library_name.is_empty() {
+            return Err("Library name is required.".to_string());
+        }
+
+        let libraries = self.get_libraries_list();
+
+        for library in libraries {
+            if library.name == library_name {
+                return Err("Library with that name already exists.".to_string());
+            }
+        }
+
+        return filere::add_library(library_name);    
+    }
+
+    pub fn set_library(&mut self, library_name: String) -> std::result::Result<(), String> {
+        let libraries: Vec<Library> = self.get_libraries_list(); 
+        let mut is_library_present = false;
+
+        for library in libraries {
+            if library.name == library_name {
+                is_library_present = true;
+
+                break;
+            }
+        }
+
+        if ! is_library_present {
+            return Err("This library does not exist.".to_string());
+        }
+
+        self.is_library_loaded = library_name == self.library;
+        self.library = library_name.clone();
+
+        return Ok(());
     }
 
     fn uppercase_first_string_letter(string: String) -> String {
