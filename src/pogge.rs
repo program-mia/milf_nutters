@@ -294,10 +294,14 @@ impl Nutter {
 
         let libraries = self.get_libraries_list();
 
-        for library in libraries {
+        for library in libraries.iter() {
             if library.name == library_name {
                 return Err("Library with that name already exists.".to_string());
             }
+        }
+
+        if libraries.len() >= 20 {
+            return Err("You cannot have more than 20 libraries.".to_string());
         }
 
         return filere::add_library(library_name);    
