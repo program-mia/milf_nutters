@@ -287,6 +287,58 @@ impl Nutter {
         return parsed_data;
     }
 
+    pub fn remove_url_from_library(&mut self, url: String, library_name: String) -> std::result::Result<(), String> {
+        // TODO I should validate if the URL is actually real, etc.
+        if url.is_empty() {
+            return Err("URL is required".to_string());
+        }
+
+        if library_name.is_empty() {
+            return Err("Library name is required.".to_string());
+        }
+
+        let libraries: Vec<Library> = self.get_libraries_list();
+        let mut is_library_in_list: bool = false;
+
+        for library in libraries.iter() {
+            if library.name == library_name {
+                is_library_in_list = true;
+            }
+        }
+
+        if ! is_library_in_list {
+            return Err("Library does not exist.".to_string());
+        }
+
+        return filere::remove_url_from_library(url, library_name);    
+    }
+
+    pub fn add_url(&mut self, url: String, library_name: String) -> std::result::Result<(), String> {
+        // TODO I should validate if the URL is actually real, etc.
+        if url.is_empty() {
+            return Err("URL is required".to_string());
+        }
+
+        if library_name.is_empty() {
+            return Err("Library name is required.".to_string());
+        }
+
+        let libraries: Vec<Library> = self.get_libraries_list();
+        let mut is_library_in_list: bool = false;
+
+        for library in libraries.iter() {
+            if library.name == library_name {
+                is_library_in_list = true;
+            }
+        }
+
+        if ! is_library_in_list {
+            return Err("Library does not exist.".to_string());
+        }
+
+        return filere::add_url_to_library(url, library_name);    
+    }
+
     pub fn add_library(&mut self, library_name: String) -> std::result::Result<(), String> {
         if library_name.is_empty() {
             return Err("Library name is required.".to_string());
@@ -307,6 +359,31 @@ impl Nutter {
         return filere::add_library(library_name);    
     }
 
+    pub fn remove_library(&mut self, library_name: String) -> std::result::Result<(), String> {
+        if library_name.is_empty() {
+            return Err("Library name is required.".to_string());
+        }
+
+        if library_name == "default" {
+            return Err("You cannot delete the default library.".to_string());
+        }
+
+        let libraries: Vec<Library> = self.get_libraries_list();
+        let mut is_library_in_list: bool = false;
+
+        for library in libraries.iter() {
+            if library.name == library_name {
+                is_library_in_list = true;
+            }
+        }
+
+        if ! is_library_in_list {
+            return Err("This library is not in the list of libraries.".to_string());
+        }
+
+        return filere::remove_library(library_name);    
+    }
+    
     pub fn set_library(&mut self, library_name: String) -> std::result::Result<(), String> {
         let libraries: Vec<Library> = self.get_libraries_list(); 
         let mut is_library_present = false;

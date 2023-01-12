@@ -53,6 +53,81 @@ pub fn is_resource_file_available(filename: String) -> bool {
         .exists();
 }
 
+pub fn remove_url_from_library(url: String, library: String) -> std::result::Result<(), String> {
+    let file_contents = match get_file_contents_as_string("libraries.json".to_string()) {
+        Ok(contents) => contents,
+        Err(error) => {
+            println!("There was an error while loading the libraries file.\n{error}");
+
+            "{}".to_string()
+        }
+    };
+
+   let mut parsed_content: JsonValue = match json::parse(&file_contents) {
+        Ok(result) => result,
+        Err(error) => {
+            println!("Failed to parse JSON data.\n{error}");
+
+            array![]
+        }
+    };
+
+    for (key, urls_array) in parsed_content.entries_mut() {
+        if key == library {
+            let mut index: usize = 0;
+            
+            for url_item in urls_array.members() {
+                if url_item == url {
+                    break;
+                }
+
+                index += 1;
+            }
+
+            urls_array.array_remove(index);
+
+            break;
+        }
+    }
+
+    return save_content_to_libraries_file(json::stringify_pretty(parsed_content, 4));
+} 
+
+pub fn add_url_to_library(url: String, library: String) -> std::result::Result<(), String> {
+    let file_contents = match get_file_contents_as_string("libraries.json".to_string()) {
+        Ok(contents) => contents,
+        Err(error) => {
+            println!("There was an error while loading the libraries file.\n{error}");
+
+            "{}".to_string()
+        }
+    };
+
+   let mut parsed_content: JsonValue = match json::parse(&file_contents) {
+        Ok(result) => result,
+        Err(error) => {
+            println!("Failed to parse JSON data.\n{error}");
+
+            array![]
+        }
+    };
+
+    for (key, urls_array) in parsed_content.entries_mut() {
+        if key == library {
+            if urls_array.len() >= 10 {
+                return Err("You can only have up to 10 URLs per library.".to_string());
+            }
+
+            match urls_array.push(url.to_string()) {
+                Ok(_) => {},
+                Err(error) => return Err(error.to_string()),
+            };
+        }
+    }
+
+    return save_content_to_libraries_file(json::stringify_pretty(parsed_content, 4));
+} 
+
 pub fn add_library(library: String) -> std::result::Result<(), String> {
     let file_contents = match get_file_contents_as_string("libraries.json".to_string()) {
         Ok(contents) => contents,
@@ -77,6 +152,30 @@ pub fn add_library(library: String) -> std::result::Result<(), String> {
         Err(error) => return Err(error.to_string()),
     };
 
+
+    return save_content_to_libraries_file(json::stringify_pretty(parsed_content, 4));
+} 
+
+pub fn remove_library(library: String) -> std::result::Result<(), String> {
+    let file_contents = match get_file_contents_as_string("libraries.json".to_string()) {
+        Ok(contents) => contents,
+        Err(error) => {
+            println!("There was an error while loading the libraries file.\n{error}");
+
+            "{}".to_string()
+        }
+    };
+
+   let mut parsed_content: JsonValue = match json::parse(&file_contents) {
+        Ok(result) => result,
+        Err(error) => {
+            println!("Failed to parse JSON data.\n{error}");
+
+            array![]
+        }
+    };
+
+    parsed_content.remove(library.as_str());
 
     return save_content_to_libraries_file(json::stringify_pretty(parsed_content, 4));
 } 

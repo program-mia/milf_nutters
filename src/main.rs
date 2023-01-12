@@ -65,8 +65,11 @@ fn run_in_console() -> Result<(), ()> {
         match action.as_str() {
             ":interactive" => use_generator_in_console(&mut nutter),
             ":set_library" => set_library_from_console(&mut nutter, option.clone()),
-            ":add_library" => add_library_form_console(&mut nutter, option.clone()),
+            ":add_library" => add_library_from_console(&mut nutter, option.clone()),
+            ":remove_library" => remove_library_from_console(&mut nutter, option.clone()),
             ":print_libraries" => print_libraries(&nutter),
+            ":add_url" => add_url_from_console(&mut nutter, option.clone()),
+            ":remove_url" => remove_url_from_console(&mut nutter, option.clone()),
             ":print_graph" => print_graph(&mut nutter),
             ":exit" => option = action.to_string().clone(),
             _ => println!("This option does not exists, please try again."),
@@ -91,13 +94,59 @@ fn print_libraries(nutter: &pogge::Nutter) {
     }
 }
 
-fn add_library_form_console(nutter: &mut pogge::Nutter, input: String) {
+fn remove_url_from_console(nutter: &mut pogge::Nutter, input: String) {
+    let url = match input.split_whitespace().nth(1) {
+        Some(data) => data.to_string(),
+        None => "".to_string(),
+    };
+    
+    let library = match input.split_whitespace().nth(2) {
+        Some(data) => data.to_string(),
+        None => nutter.library.to_string(),
+    };
+
+    match nutter.remove_url_from_library(url, library) {
+        Ok(_) => {},
+        Err(error) => println!("Error occured: {}", error),
+    };
+}
+
+fn add_url_from_console(nutter: &mut pogge::Nutter, input: String) {
+    let url = match input.split_whitespace().nth(1) {
+        Some(data) => data.to_string(),
+        None => "".to_string(),
+    };
+    
+    let library = match input.split_whitespace().nth(2) {
+        Some(data) => data.to_string(),
+        None => nutter.library.to_string(),
+    };
+
+    match nutter.add_url(url, library) {
+        Ok(_) => {},
+        Err(error) => println!("Error occured: {}", error),
+    };
+}
+
+fn add_library_from_console(nutter: &mut pogge::Nutter, input: String) {
     let library = match input.split_whitespace().nth(1) {
         Some(data) => data.to_string(),
         None => "".to_string(),
     };
 
     match nutter.add_library(library) {
+        Ok(_) => {},
+        Err(error) => println!("Error occured: {}", error),
+    };
+}
+
+fn remove_library_from_console(nutter: &mut pogge::Nutter, input: String) {
+    let library = match input.split_whitespace().nth(1) {
+        Some(data) => data.to_string(),
+        None => "".to_string(),
+    };
+
+    match nutter.remove_library(library) {
         Ok(_) => {},
         Err(error) => println!("Error occured: {}", error),
     };
@@ -137,8 +186,6 @@ fn use_generator_in_console(nutter: &mut pogge::Nutter) {
 }
 
 fn print_console_options(library: String, loaded_status: String) {
-    // TODO add some flag to Nutter indicating if the graph for the selected library is built and
-    // up to date
     println!();
     println!("---CONSOLE OPTIONS \"{}\"/{})---", library, loaded_status);
     println!(":interactive - use interactive nutter console to generate sentences.");
