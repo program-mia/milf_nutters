@@ -112,10 +112,13 @@ impl Nutter {
                 prev_entity = entity;
             }
 
-            self.graph.get_mut(&prev_entity).unwrap().connections.push(NodeConnection {
-                occurences: 1,
-                entity: "".to_string(),
-            });
+            match self.graph.get_mut(&prev_entity) {
+                Some(graph_entity) => graph_entity.connections.push(NodeConnection {
+                    occurences: 1,
+                    entity: "".to_string(),
+                }),
+                None => println!("Error while adding graph entity: {}", prev_entity),
+            };
 
             println!("Graph built for url \"{}\" in {:?}", url, single_url_timer.elapsed());
         }
