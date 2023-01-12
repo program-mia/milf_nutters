@@ -50,7 +50,7 @@ impl Nutter {
         };
     }
 
-    pub fn load_library_resources(&mut self) -> &mut Nutter {
+    pub fn load_library_resources(&mut self, needs_full_refetch: bool) -> &mut Nutter {
         let timer = Instant::now();
 
         self.library_urls = filere::load_library_urls(&self.library);
@@ -64,7 +64,7 @@ impl Nutter {
         for url in self.library_urls.iter() {
             let filename = Nutter::hash_string(url.clone());
 
-            if filere::is_resource_file_available(filename.to_string()) {
+            if filere::is_resource_file_available(filename.to_string()) && ! needs_full_refetch {
                 continue; 
             }
 
@@ -122,6 +122,8 @@ impl Nutter {
 
         println!("Words graph built in {:?}", full_function_timer.elapsed());
 
+        self.is_library_loaded = true;
+
         return self;
     }
 
@@ -175,6 +177,10 @@ impl Nutter {
 
     // Note that this only works for console
     pub fn print_graph(&mut self) -> &mut Nutter {
+        if ! self.is_library_loaded {
+            println!("Graph is not loaded, you must first build the graph.");
+        }
+
         for (_, node) in self.graph.iter() {
             println!("Node: {} - # of connections - {} with {} in total", node.entity, node.connections.len(), node.total_connections_amount);
         }

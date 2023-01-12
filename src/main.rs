@@ -70,7 +70,9 @@ fn run_in_console() -> Result<(), ()> {
             ":print_libraries" => print_libraries(&nutter),
             ":add_url" => add_url_from_console(&mut nutter, option.clone()),
             ":remove_url" => remove_url_from_console(&mut nutter, option.clone()),
+            ":fetch_data" => fetch_data_from_console(&mut nutter, option.clone()),
             ":print_graph" => print_graph(&mut nutter),
+            ":build_graph" => build_graph_from_console(&mut nutter),
             ":exit" => option = action.to_string().clone(),
             _ => println!("This option does not exists, please try again."),
         };
@@ -78,6 +80,17 @@ fn run_in_console() -> Result<(), ()> {
 
 
     return Ok(());
+}
+
+fn build_graph_from_console(nutter: &mut pogge::Nutter) {
+    nutter.load_library_resources(false)
+        .build_entities_graph();
+}
+
+fn fetch_data_from_console(nutter: &mut pogge::Nutter, input: String) {
+    let needs_full_refetch: bool = input.contains(" -c ");
+
+    nutter.load_library_resources(needs_full_refetch);
 }
 
 fn print_graph(nutter: &mut pogge::Nutter) {
@@ -167,9 +180,10 @@ fn set_library_from_console(nutter: &mut pogge::Nutter, input: String) {
 fn use_generator_in_console(nutter: &mut pogge::Nutter) {
     let console_input = std::io::stdin();
 
-    nutter.load_library_resources()
-        .build_entities_graph();
-//        .print_graph();
+    if ! nutter.is_library_loaded {
+        nutter.load_library_resources(false)
+            .build_entities_graph();
+    }
 
     let mut input = String::new();
 
@@ -196,7 +210,7 @@ fn print_console_options(library: String, loaded_status: String) {
     println!(":print_graph - attempts to print all words with connections count on your screen. It will probably overflood it.");
     println!(":add_url {} {} - adds new URL to given library. If library is not provided, the current one will be used.", "{url}", "{library?}");
     println!(":remove_url {} {} - removes given URL from library. If library is not provided, the current one will be used.", "{url}", "{library?}");
-    println!(":fetch_data - fetches and loads URLs data for currently selected library. Use add -c to clear cached files and re-download everything.");
+    println!(":fetch_data - fetches and loads URLs data for currently selected library. Add -c to clear cached files and re-download everything.");
     println!(":build_graph - builds graph of currently selected library.");
     println!(":print_sentences {} - prints the given number of sentences on the screen without entering interactive mode.", "{number}");
     println!(":exit - exit program.");
