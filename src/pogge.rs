@@ -82,6 +82,7 @@ impl Nutter {
     }
 
     pub fn build_entities_graph(&mut self) -> &mut Nutter {
+        self.graph = HashMap::new();
         let full_function_timer = Instant::now();
         // TODO this is overall slow, need to speed this up
         let mut urls: Vec<String> = vec!{};
@@ -191,10 +192,6 @@ impl Nutter {
         return self;
     }
 
-    //TODO add method to clear resources file, so that you can re-fetch it
-    //TODO add method to add something to a given library array in JSON
-    //TODO add method to return all urls in resource 
-    //TODO add method to return all available resource groups
     //TODO add method to return array/vector of the graph (similar to the print method)
     //TODO add method to print X sentences
 
