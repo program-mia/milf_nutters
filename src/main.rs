@@ -73,6 +73,7 @@ fn run_in_console() -> Result<(), ()> {
             ":fetch_data" => fetch_data_from_console(&mut nutter, option.clone()),
             ":print_graph" => print_graph(&mut nutter),
             ":build_graph" => build_graph_from_console(&mut nutter),
+            ":print_sentence" => print_single_sentence_from_console(&mut nutter, option.clone()),
             ":exit" => option = action.to_string().clone(),
             _ => println!("This option does not exists, please try again."),
         };
@@ -80,6 +81,25 @@ fn run_in_console() -> Result<(), ()> {
 
 
     return Ok(());
+}
+
+fn print_single_sentence_from_console(nutter: &mut pogge::Nutter, input: String) {
+    let word = match input.split_whitespace().nth(1) {
+        Some(result) => result.to_string(),
+        None => "".to_string(),
+    };
+
+    if ! nutter.is_library_loaded {
+        println!("Library was not loaded yet. You need to load libraries and load a graph first before generating sentences.");
+
+        return;
+    }
+
+    let sentence = match nutter.get_sentence_starting_from(word) {
+        Ok(answer) => answer,
+        Err(error) => error,
+    };
+   println!("{}", sentence); 
 }
 
 fn build_graph_from_console(nutter: &mut pogge::Nutter) {
@@ -195,7 +215,12 @@ fn use_generator_in_console(nutter: &mut pogge::Nutter) {
         console_input.read_line(&mut input).unwrap();
         input.pop();
 
-        nutter.print_sentence_starting_from(input.clone());
+        let sentence = match nutter.get_sentence_starting_from(input.clone()) {
+            Ok(result) => result,
+            Err(error) => error,
+        };
+
+        println!("{}", sentence);
     };
 }
 
@@ -212,7 +237,7 @@ fn print_console_options(library: String, loaded_status: String) {
     println!(":remove_url {} {} - removes given URL from library. If library is not provided, the current one will be used.", "{url}", "{library?}");
     println!(":fetch_data - fetches and loads URLs data for currently selected library. Add -c to clear cached files and re-download everything.");
     println!(":build_graph - builds graph of currently selected library.");
-    println!(":print_sentences {} - prints the given number of sentences on the screen without entering interactive mode.", "{number}");
+    println!(":print_sentence {} - prints the given number of sentences on the screen without entering interactive mode.", "{starting_word?}");
     println!(":exit - exit program.");
     println!();
 }

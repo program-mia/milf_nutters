@@ -195,10 +195,9 @@ impl Nutter {
     //TODO add method to return array/vector of the graph (similar to the print method)
     //TODO add method to print X sentences
 
-    // TODO maybe return last entity so that I can see if maybe the end was met or something.
-    pub fn print_sentence_starting_from(&self, mut entity: String) -> &Nutter {
-        // If entity is empty, find a starting point
+    pub fn get_sentence_starting_from(&self, mut entity: String) -> std::result::Result<String, String> {
         let word_regex = Regex::new("[a-zA-Z]+").unwrap(); 
+        let mut result = String::new();
 
         if entity.is_empty() {
             let mut rng = thread_rng();
@@ -217,6 +216,12 @@ impl Nutter {
                     index += 1;
                 }
             }
+        } else {
+            let starting_word = self.get_next_entity_after(entity.clone());
+
+            if starting_word.is_err() {
+                return starting_word;
+            }
         }
 
         let mut is_new_sentence = true;
@@ -227,27 +232,31 @@ impl Nutter {
             }
 
             if word_regex.is_match(&entity) && ! is_new_sentence {
-                print!(" ");
+                result.push_str(" ");
             }
 
-            print!("{}", entity);
+            result.push_str(entity.as_str());
 
-            entity = self.get_next_entity_after(entity);
+            entity = match self.get_next_entity_after(entity) {
+                Ok(word) => word,
+                Err(_) => String::new(),
+            };
+
             is_new_sentence = false;
         }
         
-        print!("{}", entity);
+        result.push_str(entity.as_str());
         
-        return self;
+        return Ok(result);
     }
 
-    fn get_next_entity_after(&self, mut entity: String) -> String {
+    fn get_next_entity_after(&self, mut entity: String) -> std::result::Result<String, String> {
         entity = entity.to_lowercase();
 
         if ! self.graph.contains_key(&entity) {
             println!("did not find {} in graph", entity);
 
-            return String::new();
+            return Err("Couldn't find the word you are looking for.".to_string());
         }
 
         // TODO it would be nice to maybe increase the probability of hitting a sentence ending
@@ -268,8 +277,8 @@ impl Nutter {
         }
 
         return match self.graph.get(&entity).unwrap().total_connections_amount {
-            0 => String::new(),
-            _ => self.graph.get(&entity).unwrap().entity.clone(),
+            0 => Ok(String::new()),
+            _ => Ok(self.graph.get(&entity).unwrap().entity.clone()),
         };
     }
 
