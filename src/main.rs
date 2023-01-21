@@ -1,13 +1,19 @@
 mod pogge;
 
 use std::env;
+use std::sync::Mutex;
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 
 enum RunningMode {
     Console,
     WebServer,
 }
 
-fn main() -> Result<(), ()> {
+struct AppStateWithNutter {
+    nutter: Mutex<pogge::Nutter>,
+}
+
+fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     let mode = get_running_mode_from_args(args);
@@ -34,7 +40,7 @@ fn get_running_mode_from_args(arguments: Vec<String>) -> RunningMode {
     return mode;
 }
 
-fn run_in_console() -> Result<(), ()> {
+fn run_in_console() -> std::io::Result<()> {
     let console_input = std::io::stdin();
     let mut option: String = String::new();
     let library: String = "default".to_string();
@@ -242,9 +248,73 @@ fn print_console_options(library: String, loaded_status: String) {
     println!();
 }
 
-fn run_as_web_server() -> Result<(), ()> {
+async fn set_library_from_web(request_body: String) -> impl Responder {
     // TODO
-    println!("This is not done at all yet, will slap Actix on it later on.");
+    return HttpResponse::Ok().body("Library selected");
+}
 
-    return Ok(());
+async fn add_library_from_web(request_body: String) -> impl Responder {
+    // TODO
+    return HttpResponse::Ok().body("Library added");
+}
+
+async fn remove_library_from_web(request_body: String) -> impl Responder {
+    // TODO
+    return HttpResponse::Ok().body("Library added");
+}
+
+async fn get_library_list_from_web() -> impl Responder {
+    // TODO
+    return HttpResponse::Ok().body("Here, take that list");
+}
+
+async fn build_graph_from_web() -> impl Responder {
+    // TODO
+    return HttpResponse::Ok().body("Graph build successful.");
+}
+
+async fn add_url_from_web(request_body: String) -> impl Responder {
+    // TODO
+    return HttpResponse::Ok().body("Library added");
+}
+
+async fn remove_url_from_web(request_body: String) -> impl Responder {
+    // TODO
+    return HttpResponse::Ok().body("Library added");
+}
+
+async fn get_sentence_from_web() -> impl Responder {
+    // TODO
+    return HttpResponse::Ok().body("Here you go!");
+}
+
+#[actix_web::main]
+async fn run_as_web_server() -> std::io::Result<()> {
+    let state_nutter = web::Data::new(AppStateWithNutter {
+        nutter: Mutex::new(pogge::Nutter::init("default".to_string())),
+    });
+
+    // TODO add middleware for libraries and urls scope and to building graph too so it's protected
+    // with a token
+    return HttpServer::new(move || {
+        App::new()
+            .app_data(state_nutter.clone())
+            .service(
+                web::scope("/libraries")
+                    .route("/", web::get().to(get_library_list_from_web))
+                    .route("/set", web::post().to(set_library_from_web))
+                    .route("/add", web::post().to(add_library_from_web))
+                    .route("/remove", web::post().to(remove_library_from_web))
+            )
+            .service(
+                web::scope("/urls")
+                    .route("/add", web::post().to(add_url_from_web))
+                    .route("/remove", web::post().to(remove_url_from_web))
+            )
+            .route("/build_graph", web::post().to(build_graph_from_web))
+            .route("/sentence", web::get().to(get_sentence_from_web))
+    })
+    .bind(("127.0.0.1", 8008))?
+    .run()
+    .await;
 }
