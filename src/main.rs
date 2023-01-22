@@ -2,7 +2,7 @@ mod pogge;
 
 use std::env;
 use std::sync::Mutex;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder, HttpRequest};
 use json::JsonValue;
 
 enum RunningMode {
@@ -249,8 +249,9 @@ fn print_console_options(library: String, loaded_status: String) {
     println!();
 }
 
-async fn set_library_from_web(request_body: String) -> impl Responder {
+async fn set_library_from_web(request: String) -> impl Responder {
     // TODO
+    println!("{}", request);
     return HttpResponse::Ok().body("Library selected");
 }
 
