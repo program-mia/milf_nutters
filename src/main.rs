@@ -2,8 +2,9 @@ mod pogge;
 
 use std::env;
 use std::sync::Mutex;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder, HttpRequest};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use json::JsonValue;
+use serde::Deserialize;
 
 enum RunningMode {
     Console,
@@ -249,9 +250,14 @@ fn print_console_options(library: String, loaded_status: String) {
     println!();
 }
 
-async fn set_library_from_web(request: String) -> impl Responder {
+#[derive(Deserialize)]
+struct SetLibraryPostData {
+    name: String,
+}
+
+async fn set_library_from_web(request: web::Json<SetLibraryPostData>) -> impl Responder {
     // TODO
-    println!("{}", request);
+    println!("{}", request.name);
     return HttpResponse::Ok().body("Library selected");
 }
 
