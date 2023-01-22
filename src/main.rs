@@ -3,6 +3,7 @@ mod pogge;
 use std::env;
 use std::sync::Mutex;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use json::JsonValue;
 
 enum RunningMode {
     Console,
@@ -263,9 +264,53 @@ async fn remove_library_from_web(request_body: String) -> impl Responder {
     return HttpResponse::Ok().body("Library added");
 }
 
-async fn get_library_list_from_web() -> impl Responder {
-    // TODO
-    return HttpResponse::Ok().body("Here, take that list");
+async fn get_library_list_from_web(data: web::Data<AppStateWithNutter>) -> impl Responder {
+    let nutter = data.nutter.lock().unwrap();
+    let library_lists = nutter.get_libraries_list();
+    let mut response = JsonValue::new_object();
+
+    for library in library_lists {
+        let mut urls = JsonValue::new_array();
+
+        for url in library.urls {
+            let result = urls.push(url.to_string());
+
+            if result.is_err() {
+                let error_message = match result.err() {
+                    Some(error) => error.to_string(),
+                    None => "Unknown error".to_string(),
+                };
+
+                println!(
+                    "Error while adding URL to list of URLs - {}. Library: {}, URL: {}",
+                    error_message,
+                    library.name,
+                    url,
+                );
+
+                return HttpResponse::InternalServerError().body("Server error");
+            }
+        }
+
+        let result = response.insert(library.name.as_str(), urls.clone());
+
+        if result.is_err() {
+            let error_message = match result.err() {
+                Some(error) => error.to_string(),
+                None => "Unknown error".to_string(),
+            };
+
+            println!(
+                "Error while adding library to response - {}. Library: {}",
+                error_message,
+                library.name,
+            );
+
+            return HttpResponse::InternalServerError().body("Server error");
+        }
+    }
+
+    return HttpResponse::Ok().body(response.to_string());
 }
 
 async fn build_graph_from_web() -> impl Responder {
@@ -301,7 +346,7 @@ async fn run_as_web_server() -> std::io::Result<()> {
             .app_data(state_nutter.clone())
             .service(
                 web::scope("/libraries")
-                    .route("/", web::get().to(get_library_list_from_web))
+                    .route("", web::get().to(get_library_list_from_web))
                     .route("/set", web::post().to(set_library_from_web))
                     .route("/add", web::post().to(add_library_from_web))
                     .route("/remove", web::post().to(remove_library_from_web))
