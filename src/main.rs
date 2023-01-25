@@ -255,10 +255,23 @@ struct SetLibraryPostData {
     name: String,
 }
 
-async fn set_library_from_web(request: web::Json<SetLibraryPostData>) -> impl Responder {
-    // TODO
-    println!("{}", request.name);
-    return HttpResponse::Ok().body("Library selected");
+//TODO probably want to replace println!s with Log calls (save to file or something)
+async fn set_library_from_web(request: web::Json<SetLibraryPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
+    println!("Attempting to set library to '{}'", request.name);
+    let mut nutter = data.nutter.lock().unwrap();
+
+    return match nutter.set_library(request.name.clone()) {
+        Ok(_) => {
+            println!("New library set");
+
+            HttpResponse::Ok().body("Library set")
+        },
+        Err(error) => { 
+            println!("Failed to set library: {}", error);
+
+            HttpResponse::UnprocessableEntity().body(error)
+        }
+    };
 }
 
 async fn add_library_from_web(request_body: String) -> impl Responder {
@@ -346,6 +359,7 @@ async fn run_as_web_server() -> std::io::Result<()> {
         nutter: Mutex::new(pogge::Nutter::init("default".to_string())),
     });
 
+    println!("Server started at 127.0.0.1 at port 8008");
     // TODO add middleware for libraries and urls scope and to building graph too so it's protected
     // with a token
     return HttpServer::new(move || {
@@ -357,6 +371,8 @@ async fn run_as_web_server() -> std::io::Result<()> {
                     .route("/set", web::post().to(set_library_from_web))
                     .route("/add", web::post().to(add_library_from_web))
                     .route("/remove", web::post().to(remove_library_from_web))
+                    // TODO would be nice to have a route getting the active library or something
+                    // like that
             )
             .service(
                 web::scope("/urls")
