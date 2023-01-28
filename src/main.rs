@@ -393,7 +393,7 @@ async fn run_as_web_server() -> std::io::Result<()> {
         nutter: Mutex::new(pogge::Nutter::init("default".to_string())),
     });
 
-    println!("Server started at 127.0.0.1 at port 8008");
+    info!("Server started at 127.0.0.1 at port 8008");
     // TODO add middleware for libraries and urls scope and to building graph too so it's protected
     // with a token
     return HttpServer::new(move || {
