@@ -1,10 +1,14 @@
 mod pogge;
 
-use std::env;
+#[macro_use]
+extern crate simple_log;
+
+use std::{env, io::ErrorKind};
 use std::sync::Mutex;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use json::JsonValue;
 use serde::Deserialize;
+use simple_log::LogConfigBuilder;
 
 enum RunningMode {
     Console,
@@ -16,6 +20,22 @@ struct AppStateWithNutter {
 }
 
 fn main() -> std::io::Result<()> {
+    let log_config = LogConfigBuilder::builder()
+        .path("./log/nutter.log")
+        .time_format("%Y-%m-%d %H:%M:%S.%f")
+        .level("info")
+        .output_file()
+        .output_console()
+        .build();
+
+    let setup_log_result = simple_log::new(log_config);
+
+    if setup_log_result.is_err() {
+        println!("Failed to setup logging.");
+
+        return Err(std::io::Error::new(ErrorKind::Other, "Failed to setup logging.")); 
+    }
+
     let args: Vec<String> = env::args().collect();
 
     let mode = get_running_mode_from_args(args);
@@ -251,37 +271,51 @@ fn print_console_options(library: String, loaded_status: String) {
 }
 
 #[derive(Deserialize)]
-struct SetLibraryPostData {
-    name: String,
+struct LibraryPostData {
+    library_name: String,
 }
 
-//TODO probably want to replace println!s with Log calls (save to file or something)
-async fn set_library_from_web(request: web::Json<SetLibraryPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
-    println!("Attempting to set library to '{}'", request.name);
+async fn set_library_from_web(request: web::Json<LibraryPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
+    info!("Attempting to set library to '{}'", request.library_name);
     let mut nutter = data.nutter.lock().unwrap();
 
-    return match nutter.set_library(request.name.clone()) {
-        Ok(_) => {
-            println!("New library set");
-
-            HttpResponse::Ok().body("Library set")
-        },
+    return match nutter.set_library(request.library_name.clone()) {
+        Ok(_) => HttpResponse::Ok().body("Library set"),
         Err(error) => { 
-            println!("Failed to set library: {}", error);
+            info!("Failed to set library: {}", error);
 
             HttpResponse::UnprocessableEntity().body(error)
         }
     };
 }
 
-async fn add_library_from_web(request_body: String) -> impl Responder {
-    // TODO
-    return HttpResponse::Ok().body("Library added");
+async fn add_library_from_web(request: web::Json<LibraryPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
+    info!("Attempting to add library: {}", request.library_name);
+    let mut nutter = data.nutter.lock().unwrap();
+
+    return match nutter.add_library(request.library_name.clone()) {
+        Ok(_) => HttpResponse::Ok().body("New library added"),
+        Err(error) => {
+            info!("Failed to add new library ({}): {}", request.library_name, error);
+
+            HttpResponse::UnprocessableEntity().body(error)
+        },
+    };
 }
 
-async fn remove_library_from_web(request_body: String) -> impl Responder {
-    // TODO
-    return HttpResponse::Ok().body("Library added");
+async fn remove_library_from_web(request: web::Json<LibraryPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
+    info!("Attempting to remove library: {}", request.library_name);
+
+    let mut nutter = data.nutter.lock().unwrap();
+
+    return match nutter.remove_library(request.library_name.clone()) {
+        Ok(_) => HttpResponse::Ok().body("Removed library."),
+        Err(error) => {
+            info!("Failed to remove library ({}): {}", request.library_name, error);
+
+            HttpResponse::UnprocessableEntity().body(error)
+        }
+    };
 }
 
 async fn get_library_list_from_web(data: web::Data<AppStateWithNutter>) -> impl Responder {
