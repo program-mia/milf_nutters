@@ -393,7 +393,7 @@ async fn add_url_from_web(request: web::Json<LibraryWithUrlPostData>, data: web:
     return match nutter.add_url(request.url.clone(), request.library_name.clone()) {
         Ok(_) => HttpResponse::Ok().body("URL added to selected library."),
         Err(error) => {
-            info!("Failed to add URL {} to library {}", request.url, request.library_name);
+            info!("Failed to add URL {} to library {}: {}", request.url, request.library_name, error);
 
             HttpResponse::UnprocessableEntity().body(error)
         },
@@ -401,8 +401,22 @@ async fn add_url_from_web(request: web::Json<LibraryWithUrlPostData>, data: web:
 }
 
 async fn remove_url_from_web(request: web::Json<LibraryWithUrlPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
-    // TODO
-    return HttpResponse::Ok().body("Library added");
+    info!("Removing URL {} from library {}", request.url, request.library_name);
+
+    if request.url.is_empty() || request.library_name.is_empty() {
+        return HttpResponse::UnprocessableEntity().body("Library and URL have to be filled.");
+    }
+
+    let mut nutter = data.nutter.lock().unwrap();
+
+    return match nutter.remove_url_from_library(request.url.clone(), request.library_name.clone()) {
+        Ok(_) => HttpResponse::Ok().body("URL removed from selected library."),
+        Err(error) => {
+            info!("Failed to remove URL {} from library {}: {}", request.url, request.library_name, error);
+
+            HttpResponse::UnprocessableEntity().body(error)
+        }
+    }
 }
 
 async fn get_sentence_from_web() -> impl Responder {
