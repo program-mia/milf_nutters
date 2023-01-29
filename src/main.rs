@@ -367,9 +367,12 @@ async fn get_library_list_from_web(data: web::Data<AppStateWithNutter>) -> impl 
     return HttpResponse::Ok().body(response.to_string());
 }
 
-async fn build_graph_from_web() -> impl Responder {
-    // TODO
-    return HttpResponse::Ok().body("Graph build successful.");
+async fn build_graph_from_web(data: web::Data<AppStateWithNutter>) -> impl Responder {
+    let mut nutter = data.nutter.lock().unwrap();
+
+    nutter.build_entities_graph();
+
+    return HttpResponse::Ok().body(format!("Graph build successful for library {}.", nutter.library));
 }
 
 async fn add_url_from_web(request_body: String) -> impl Responder {
