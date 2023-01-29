@@ -426,8 +426,6 @@ async fn remove_url_from_web(request: web::Json<LibraryWithUrlPostData>, data: w
 }
 
 async fn get_sentence_from_web(request: HttpRequest, data: web::Data<AppStateWithNutter>) -> impl Responder {
-    println!("Query string: {}", request.query_string());
-
     let nutter = data.nutter.lock().unwrap();
 
     if ! nutter.is_library_loaded {
