@@ -199,6 +199,10 @@ impl Nutter {
         let word_regex = Regex::new("[a-zA-Z]+").unwrap(); 
         let mut result = String::new();
 
+        if self.graph.len() == 0 {
+            return Err("Graph is empty for this library.".to_string());
+        }
+
         if entity.is_empty() {
             let mut rng = thread_rng();
 

@@ -382,7 +382,8 @@ async fn get_library_list_from_web(data: web::Data<AppStateWithNutter>) -> impl 
 async fn build_graph_from_web(data: web::Data<AppStateWithNutter>) -> impl Responder {
     let mut nutter = data.nutter.lock().unwrap();
 
-    nutter.build_entities_graph();
+    nutter.load_library_resources(true)
+        .build_entities_graph();
 
     return HttpResponse::Ok().body(format!("Graph build successful for library {}.", nutter.library));
 }
@@ -448,7 +449,7 @@ async fn get_sentence_from_web(request: HttpRequest, data: web::Data<AppStateWit
         };
 
         if attribute == "first_word" {
-            starting_word = match entities.nth(1) {
+            starting_word = match entities.nth(0) {
                 Some(result) => result.to_string(),
                 None => String::new(),
             };
