@@ -284,7 +284,7 @@ struct LibraryWithUrlPostData {
 #[derive(Serialize)]
 struct ActiveLibraryWithStateResponse {
     library_name: String,
-    is_active: bool,
+    is_loaded: bool,
 }
 
 async fn set_library_from_web(request: web::Json<LibraryPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
@@ -435,7 +435,7 @@ async fn get_active_library_with_state_from_web(data: web::Data<AppStateWithNutt
 
     let response = ActiveLibraryWithStateResponse {
         library_name: nutter.library.clone(),
-        is_active: nutter.is_library_loaded,
+        is_loaded: nutter.is_library_loaded,
     };
 
     return Ok(web::Json(response));
