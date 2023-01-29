@@ -6,9 +6,12 @@ extern crate simple_log;
 use std::{env, io::ErrorKind};
 use std::sync::Mutex;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder, HttpRequest};
+use actix_web::dev::Service;
 use json::JsonValue;
+use reqwest::Method;
 use serde::{Serialize, Deserialize};
 use simple_log::LogConfigBuilder;
+use dotenv::dotenv;
 
 enum RunningMode {
     Console,
@@ -481,30 +484,79 @@ async fn get_active_library_with_state_from_web(data: web::Data<AppStateWithNutt
 
 #[actix_web::main]
 async fn run_as_web_server() -> std::io::Result<()> {
+    dotenv().ok();
+
     let state_nutter = web::Data::new(AppStateWithNutter {
         nutter: Mutex::new(pogge::Nutter::init("default".to_string())),
     });
 
     info!("Server started at 127.0.0.1 at port 8008");
-    // TODO add middleware for libraries and urls scope and to building graph too so it's protected
-    // with a token
+
     return HttpServer::new(move || {
         App::new()
             .app_data(state_nutter.clone())
             .service(
                 web::scope("/libraries")
+                    .wrap_fn(move |request, server| {
+                        // TODO should probably add token to data instead
+                        let admin_token = std::env::var("ADMIN_TOKEN").expect("ADMIN_TOKEN is required to run this program as server.");
+
+                        if request.method() == Method::GET {
+                            return server.call(request);
+                        }
+
+                        let mut is_missing_admin_token = true;
+
+                        for (header_name, header_value) in request.headers() {
+                            if header_name == "admin_token" && header_value.to_str().unwrap() == admin_token {
+                                is_missing_admin_token = false;
+                            }
+                        }
+
+                        if is_missing_admin_token {
+                            return Box::pin(async move {
+                                return Ok(request.into_response(HttpResponse::Unauthorized().finish()));
+                            });
+                        }
+
+                        return server.call(request);
+                    })
                     .route("", web::get().to(get_library_list_from_web))
                     .route("/active", web::get().to(get_active_library_with_state_from_web))
                     .route("/set", web::post().to(set_library_from_web))
                     .route("/add", web::post().to(add_library_from_web))
                     .route("/remove", web::post().to(remove_library_from_web))
+                    .route("/build_graph", web::post().to(build_graph_from_web))
             )
             .service(
                 web::scope("/urls")
+                    .wrap_fn(move |request, server| {
+                        // TODO should probably add token to data instead
+                        let admin_token = std::env::var("ADMIN_TOKEN").expect("ADMIN_TOKEN is required to run this program as server.");
+
+                        if request.method() == Method::GET {
+                            return server.call(request);
+                        }
+
+                        let mut is_missing_admin_token = true;
+
+                        for (header_name, header_value) in request.headers() {
+                            if header_name == "admin_token" && header_value.to_str().unwrap() == admin_token {
+                                is_missing_admin_token = false;
+                            }
+                        }
+
+                        if is_missing_admin_token {
+                            return Box::pin(async move {
+                                return Ok(request.into_response(HttpResponse::Unauthorized().finish()));
+                            });
+                        }
+
+                        return server.call(request);
+                    })
                     .route("/add", web::post().to(add_url_from_web))
                     .route("/remove", web::post().to(remove_url_from_web))
             )
-            .route("/build_graph", web::post().to(build_graph_from_web))
             .route("/sentence", web::get().to(get_sentence_from_web))
     })
     .bind(("127.0.0.1", 8008))?

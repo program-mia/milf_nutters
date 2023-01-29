@@ -14,3 +14,4 @@ rand = "0.8.5"
 actix-web = "4"
 serde = { version = "1.0.152", features = ["derive"] }
 simple-log = "1.6.0"
+dotenv = "0.15.0"
