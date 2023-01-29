@@ -7,7 +7,7 @@ use std::{env, io::ErrorKind};
 use std::sync::Mutex;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use json::JsonValue;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use simple_log::LogConfigBuilder;
 
 enum RunningMode {
@@ -281,6 +281,12 @@ struct LibraryWithUrlPostData {
     url: String,
 }
 
+#[derive(Serialize)]
+struct ActiveLibraryWithStateResponse {
+    library_name: String,
+    is_active: bool,
+}
+
 async fn set_library_from_web(request: web::Json<LibraryPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
     info!("Attempting to set library to '{}'", request.library_name);
     let mut nutter = data.nutter.lock().unwrap();
@@ -424,6 +430,17 @@ async fn get_sentence_from_web() -> impl Responder {
     return HttpResponse::Ok().body("Here you go!");
 }
 
+async fn get_active_library_with_state_from_web(data: web::Data<AppStateWithNutter>) -> actix_web::Result<impl Responder> {
+    let nutter = data.nutter.lock().unwrap();
+
+    let response = ActiveLibraryWithStateResponse {
+        library_name: nutter.library.clone(),
+        is_active: nutter.is_library_loaded,
+    };
+
+    return Ok(web::Json(response));
+}
+
 #[actix_web::main]
 async fn run_as_web_server() -> std::io::Result<()> {
     let state_nutter = web::Data::new(AppStateWithNutter {
@@ -439,6 +456,7 @@ async fn run_as_web_server() -> std::io::Result<()> {
             .service(
                 web::scope("/libraries")
                     .route("", web::get().to(get_library_list_from_web))
+                    .route("/active", web::get().to(get_active_library_with_state_from_web))
                     .route("/set", web::post().to(set_library_from_web))
                     .route("/add", web::post().to(add_library_from_web))
                     .route("/remove", web::post().to(remove_library_from_web))
