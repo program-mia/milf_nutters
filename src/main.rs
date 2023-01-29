@@ -275,6 +275,12 @@ struct LibraryPostData {
     library_name: String,
 }
 
+#[derive(Deserialize)]
+struct LibraryWithUrlPostData {
+    library_name: String,
+    url: String,
+}
+
 async fn set_library_from_web(request: web::Json<LibraryPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
     info!("Attempting to set library to '{}'", request.library_name);
     let mut nutter = data.nutter.lock().unwrap();
@@ -375,12 +381,26 @@ async fn build_graph_from_web(data: web::Data<AppStateWithNutter>) -> impl Respo
     return HttpResponse::Ok().body(format!("Graph build successful for library {}.", nutter.library));
 }
 
-async fn add_url_from_web(request_body: String) -> impl Responder {
-    // TODO
-    return HttpResponse::Ok().body("Library added");
+async fn add_url_from_web(request: web::Json<LibraryWithUrlPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
+    info!("Adding URL {} to library {}", request.url, request.library_name);
+
+    if request.library_name.is_empty() || request.url.is_empty() {
+        return HttpResponse::UnprocessableEntity().body("Library and URL have to be filled.");
+    }
+
+    let mut nutter = data.nutter.lock().unwrap();
+
+    return match nutter.add_url(request.url.clone(), request.library_name.clone()) {
+        Ok(_) => HttpResponse::Ok().body("URL added to selected library."),
+        Err(error) => {
+            info!("Failed to add URL {} to library {}", request.url, request.library_name);
+
+            HttpResponse::UnprocessableEntity().body(error)
+        },
+    };
 }
 
-async fn remove_url_from_web(request_body: String) -> impl Responder {
+async fn remove_url_from_web(request: web::Json<LibraryWithUrlPostData>, data: web::Data<AppStateWithNutter>) -> impl Responder {
     // TODO
     return HttpResponse::Ok().body("Library added");
 }
