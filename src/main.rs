@@ -5,7 +5,7 @@ extern crate simple_log;
 
 use std::{env, io::ErrorKind};
 use std::sync::Mutex;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder, HttpRequest};
 use json::JsonValue;
 use serde::{Serialize, Deserialize};
 use simple_log::LogConfigBuilder;
@@ -425,9 +425,48 @@ async fn remove_url_from_web(request: web::Json<LibraryWithUrlPostData>, data: w
     }
 }
 
-async fn get_sentence_from_web() -> impl Responder {
-    // TODO
-    return HttpResponse::Ok().body("Here you go!");
+async fn get_sentence_from_web(request: HttpRequest, data: web::Data<AppStateWithNutter>) -> impl Responder {
+    println!("Query string: {}", request.query_string());
+
+    let nutter = data.nutter.lock().unwrap();
+
+    if ! nutter.is_library_loaded {
+        return HttpResponse::UnprocessableEntity().body("Library graph is not built.");
+    }
+
+    let query_string_entities = request.query_string().split('&');
+    let mut starting_word = String::new();
+
+    for entity in query_string_entities {
+        if ! entity.contains('=') {
+            continue;
+        }
+
+        let mut entities = entity.split('=');
+
+        let attribute: String = match entities.nth(0) {
+            Some(result) => result.to_string(),
+            None => String::new(),
+        };
+
+        if attribute == "first_word" {
+            starting_word = match entities.nth(1) {
+                Some(result) => result.to_string(),
+                None => String::new(),
+            };
+
+            break;
+        }
+    }
+
+    return match nutter.get_sentence_starting_from(starting_word) {
+        Ok(sentence) => HttpResponse::Ok().body(sentence),
+        Err(error) => {
+            info!("Error when generating sentence: {}", error);
+
+            HttpResponse::UnprocessableEntity().body(error)
+        } 
+    };
 }
 
 async fn get_active_library_with_state_from_web(data: web::Data<AppStateWithNutter>) -> actix_web::Result<impl Responder> {
@@ -460,8 +499,6 @@ async fn run_as_web_server() -> std::io::Result<()> {
                     .route("/set", web::post().to(set_library_from_web))
                     .route("/add", web::post().to(add_library_from_web))
                     .route("/remove", web::post().to(remove_library_from_web))
-                    // TODO would be nice to have a route getting the active library or something
-                    // like that
             )
             .service(
                 web::scope("/urls")
