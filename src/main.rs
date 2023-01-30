@@ -508,6 +508,7 @@ async fn run_as_web_server() -> std::io::Result<()> {
                         let mut is_missing_admin_token = true;
 
                         for (header_name, header_value) in request.headers() {
+                            println!("header: {}, value: {}", header_name, header_value);
                             if header_name == "admin_token" && header_value.to_str().unwrap() == admin_token {
                                 is_missing_admin_token = false;
                             }
